@@ -3,6 +3,7 @@ from random import getrandbits, choices
 
 
 class DictionaryGame:
+
     def __init__(self, difficulty: str):
         self.FR_DICT: set = set(line.strip() for line in open('dict.txt'))
         self.LETTERS: str = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
@@ -10,13 +11,16 @@ class DictionaryGame:
         self.difficulty: str = difficulty
 
     def get_random_letters(self):
-        dict_difficulty = {
-            'easy': 9,
-            'medium': 8,
-            'hard': 7
-        }
+        dict_difficulty = {'easy': 10, 'medium': 9, 'hard': 8}
         number_of_letters = dict_difficulty[self.difficulty] + getrandbits(1)
-        random_letters = choices(self.LETTERS, weights=(711, 113, 318, 367, 1210, 111, 123, 111, 659, 34, 28, 496, 262, 639, 501, 249, 65, 607, 651, 592, 449, 111, 17, 38, 46, 15), k=number_of_letters)
+        # each 'weight' is associated with an index in the self.LETTERS attribute
+        # TO-DO: find a more elegant way to associate a letter with a weight
+        random_letters = choices(self.LETTERS,
+                                 weights=(711, 113, 318, 367, 1210, 111, 123,
+                                          111, 659, 34, 28, 496, 262, 639, 501,
+                                          249, 65, 607, 651, 592, 449, 111, 17,
+                                          38, 46, 15),
+                                 k=number_of_letters)
         if not self.are_letters_suitable(random_letters):
             return self.get_random_letters()
         return random_letters
@@ -64,6 +68,7 @@ class DictionaryGame:
         return False
 
     def turn(self):
+        # TO-DO: add an asynchronous timer that prints the coutndown until the end of the turn.
         letters = self.get_random_letters()
         finish_time = time.monotonic() + 10  # self.TIME_TO_ANSWER
         print(f'Écrit des mots avec les lettres {letters}:')
