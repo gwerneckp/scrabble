@@ -1,5 +1,5 @@
 import time
-from random import randrange, getrandbits
+from random import getrandbits, choices
 
 
 class DictionaryGame:
@@ -16,9 +16,7 @@ class DictionaryGame:
             'hard': 7
         }
         number_of_letters = dict_difficulty[self.difficulty] + getrandbits(1)
-        random_letters = []
-        for _ in range(number_of_letters):
-            random_letters.append(self.LETTERS[randrange(0, len(self.LETTERS))])
+        random_letters = choices(self.LETTERS, weights=(711, 113, 318, 367, 1210, 111, 123, 111, 659, 34, 28, 496, 262, 639, 501, 249, 65, 607, 651, 592, 449, 111, 17, 38, 46, 15), k=number_of_letters)
         if not self.are_letters_suitable(random_letters):
             return self.get_random_letters()
         return random_letters
