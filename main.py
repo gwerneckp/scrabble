@@ -45,14 +45,15 @@ class DictionaryGame:
         else:
             return False
 
-    # def get_best_solution(self, letters: list):
-    #     len_looking: int = 0
-    #     current_best_solution: str = ''
-    #     for word in self.FR_DICT:
-    #         if len_looking < len(word) < len(letters):
-    #             if self.verify_response_in_letters(letters, word):
-    #                 current_best_solution = word
-    #     return current_best_solution
+    def get_best_solution(self, letters: list):
+        len_looking: int = 0
+        current_best_solution: str = ''
+        for word in self.FR_DICT:
+            if len_looking < len(word) <= len(letters):
+                if self.verify_response_in_letters(letters, word):
+                    current_best_solution = word
+                    len_looking = len(current_best_solution)
+        return current_best_solution
 
     # this method will return False if there are not at least 5 word possibilities in the letter selection
     def are_letters_suitable(self, letters: list):
@@ -69,16 +70,17 @@ class DictionaryGame:
         finish_time = time.monotonic() + 10  # self.TIME_TO_ANSWER
         print(f'Écrit des mots avec les lettres {letters}:')
         while time.monotonic() <= finish_time:
-            submitted_word = input('$ ')
-            if (self.verify_response_in_letters(letters, submitted_word) and self.verify_response_in_dictionary(
-                    submitted_word)):
-                print(f'{len(submitted_word)} points!')
+            submitted_word = input('$ ').upper()
+            if self.verify_response_in_letters(letters, submitted_word):
+                if self.verify_response_in_dictionary(submitted_word):
+                    print(f'{len(submitted_word)} points!')
+                else:
+                    print(f'Not in the dictionnary')
             else:
-                print(f'Invalid word.')
-        # print(f'The best solution is {self.get_best_solution(letters)}')
+                print(f'Invalid letters.')
+        print(f'The best solution is {self.get_best_solution(letters)}')
 
 
 if __name__ == '__main__':
-    game = DictionaryGame('medium')
-    print(game.get_best_solution(['A', 'U', 'R', 'A', 'S']))
-    # game.turn()
+    game = DictionaryGame('easy')
+    game.turn()
