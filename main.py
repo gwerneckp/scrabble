@@ -1,4 +1,4 @@
-import time
+from time import monotonic
 from random import getrandbits, choices
 from pytimedinput import timedInput
 
@@ -72,10 +72,10 @@ class DictionaryGame:
         CORRECTION_TIME = 0.1 #this will be added to avoid calling the timedInput function with low timeout
         points_scored = 0
         letters = self.get_random_letters()
-        finish_time = time.monotonic() + TIME_TURN  # self.TIME_TO_ANSWER
+        finish_time = monotonic() + TIME_TURN  # self.TIME_TO_ANSWER
         print(f'Écrit des mots avec les lettres {letters}:')
-        while time.monotonic() <= finish_time:
-            submitted_word, _ = timedInput(prompt='$ ', timeout=(finish_time-time.monotonic()+CORRECTION_TIME), resetOnInput=True, endCharacters="\x1b\n\r")
+        while monotonic() <= finish_time:
+            submitted_word, _ = timedInput(prompt='$ ', timeout=(finish_time-monotonic()+CORRECTION_TIME), resetOnInput=True, endCharacters="\x1b\n\r")
             if submitted_word:
                 submitted_word = submitted_word.upper()
                 if self.verify_response_in_letters(letters, submitted_word):
