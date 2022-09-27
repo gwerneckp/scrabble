@@ -1,5 +1,8 @@
+from sys import __stdin__
 from time import monotonic
 from random import getrandbits, choices
+from re import sub
+# if __stdin__.isatty():
 from pytimedinput import timedInput
 
 class DictionaryGame:
@@ -7,7 +10,7 @@ class DictionaryGame:
     def __init__(self, difficulty: str):
         self.FR_DICT: set = set(line.strip() for line in open('dict.txt'))
         self.LETTERS: str = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
-        self.TIME_TO_ANSWER: int = 60
+        self.TIME_TO_ANSWER: int = 5 #DEBUG PURPOSES
         self.difficulty: str = difficulty
 
     def get_random_letters(self):
@@ -41,6 +44,18 @@ class DictionaryGame:
                 return False
         return True
 
+    @staticmethod
+    def string_sanitize(word: str):
+        word = sub(r'[àáâãäå]', 'a', word)
+        word = sub(r'[èéêë]', 'e', word)
+        word = sub(r'[ìíîï]', 'i', word)
+        word = sub(r'[òóôõö]', 'o', word)
+        word = sub(r'[ùúûü]', 'u', word)
+        word = word.upper()
+        word = sub(r'[^A-Z]', '', word)
+        return word
+
+
     def verify_response_in_dictionary(self, word: str):
         if word in self.FR_DICT:
             return True
@@ -68,16 +83,16 @@ class DictionaryGame:
         return False
 
     def turn(self):
-        TIME_TURN = 5
         CORRECTION_TIME = 0.1 #this will be added to avoid calling the timedInput function with low timeout
         points_scored = 0
         letters = self.get_random_letters()
-        finish_time = monotonic() + TIME_TURN  # self.TIME_TO_ANSWER
+        finish_time = monotonic() + self.TIME_TO_ANSWER  # self.TIME_TO_ANSWER
         print(f'Écrit des mots avec les lettres {letters}:')
+        # if __stdin__.isatty():
         while monotonic() <= finish_time:
             submitted_word, _ = timedInput(prompt='$ ', timeout=(finish_time-monotonic()+CORRECTION_TIME), resetOnInput=True, endCharacters="\x1b\n\r")
             if submitted_word:
-                submitted_word = submitted_word.upper()
+                submitted_word = self.string_sanitize(submitted_word)
                 if self.verify_response_in_letters(letters, submitted_word):
                     if self.verify_response_in_dictionary(submitted_word):
                         print(f'{len(submitted_word)} points!')
@@ -86,6 +101,20 @@ class DictionaryGame:
                         print(f'Not in the dictionnary')
                 else:
                     print(f'Invalid letters.')
+        # else:
+        #     while monotonic() <= finish_time:
+        #         submitted_word = input('$ ')
+        #         if submitted_word:
+        #             submitted_word = self.string_sanitize(submitted_word)
+        #             if self.verify_response_in_letters(letters, submitted_word):
+        #                 if self.verify_response_in_dictionary(submitted_word):
+        #                     print(f'{len(submitted_word)} points!')
+        #                     points_scored += len(submitted_word)
+        #                 else:
+        #                     print(f'Not in the dictionnary')
+        #             else:
+        #                 print(f'Invalid letters.')
+
         print(f'You scored {points_scored} points!')
         print(f'The best solution is {self.get_best_solution(letters)}')
 
