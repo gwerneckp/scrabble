@@ -1,6 +1,6 @@
 import time
 from random import getrandbits, choices
-
+from pytimedinput import timedInput
 
 class DictionaryGame:
 
@@ -68,19 +68,25 @@ class DictionaryGame:
         return False
 
     def turn(self):
-        # TO-DO: add an asynchronous timer that prints the coutndown until the end of the turn.
+        TIME_TURN = 5
+        CORRECTION_TIME = 0.1 #this will be added to avoid calling the timedInput function with low timeout
+        points_scored = 0
         letters = self.get_random_letters()
-        finish_time = time.monotonic() + 10  # self.TIME_TO_ANSWER
+        finish_time = time.monotonic() + TIME_TURN  # self.TIME_TO_ANSWER
         print(f'Écrit des mots avec les lettres {letters}:')
         while time.monotonic() <= finish_time:
-            submitted_word = input('$ ').upper()
-            if self.verify_response_in_letters(letters, submitted_word):
-                if self.verify_response_in_dictionary(submitted_word):
-                    print(f'{len(submitted_word)} points!')
+            submitted_word, _ = timedInput(prompt='$ ', timeout=(finish_time-time.monotonic()+CORRECTION_TIME), resetOnInput=True, endCharacters="\x1b\n\r")
+            if submitted_word:
+                submitted_word = submitted_word.upper()
+                if self.verify_response_in_letters(letters, submitted_word):
+                    if self.verify_response_in_dictionary(submitted_word):
+                        print(f'{len(submitted_word)} points!')
+                        points_scored += len(submitted_word)
+                    else:
+                        print(f'Not in the dictionnary')
                 else:
-                    print(f'Not in the dictionnary')
-            else:
-                print(f'Invalid letters.')
+                    print(f'Invalid letters.')
+        print(f'You scored {points_scored} points!')
         print(f'The best solution is {self.get_best_solution(letters)}')
 
 
