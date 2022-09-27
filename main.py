@@ -86,8 +86,10 @@ class DictionaryGame:
         CORRECTION_TIME = 0.1 #this will be added to avoid calling the timedInput function with low timeout
         points_scored = 0
         letters = self.get_random_letters()
+        BEST_SOLUTION = self.get_best_solution(letters)
         finish_time = monotonic() + self.TIME_TO_ANSWER  # self.TIME_TO_ANSWER
         print(f'Écrit des mots avec les lettres {letters}:')
+        print(f'La meilleure solution contient {len(BEST_SOLUTION)} lettres.')
         # if __stdin__.isatty():
         while monotonic() <= finish_time:
             submitted_word, _ = timedInput(prompt='$ ', timeout=(finish_time-monotonic()+CORRECTION_TIME), resetOnInput=True, endCharacters="\x1b\n\r")
@@ -116,7 +118,7 @@ class DictionaryGame:
         #                 print(f'Invalid letters.')
 
         print(f'You scored {points_scored} points!')
-        print(f'The best solution is {self.get_best_solution(letters)}')
+        print(f'The best solution is {BEST_SOLUTION}')
 
 
 if __name__ == '__main__':
