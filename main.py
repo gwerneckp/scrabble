@@ -1,23 +1,38 @@
-from sys import __stdin__
+from sys import __stdin__, stderr
 from time import monotonic
 from random import getrandbits, choices
 from re import sub
-# if __stdin__.isatty():
-from pytimedinput import timedInput
+
+if __stdin__.isatty():
+    from pytimedinput import timedInput
+else:
+    from threading import Timer
+    print('This game was intended to be played in an interactive shell.', file=stderr)
+
 
 class DictionaryGame:
 
     def __init__(self, difficulty: str):
         self.FR_DICT: set = set(line.strip() for line in open('dict.txt'))
         self.LETTERS: str = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
-        self.TIME_TO_ANSWER: int = 5 #DEBUG PURPOSES
+        self.TIME_TO_ANSWER: int = 15  # DEBUG PURPOSES
         self.difficulty: str = difficulty
+        self.score: int = 1
+        self.high_score: int = 1
+
+        self.__dict_difficulty_points = {
+            'easy': 7,
+            'medium': 8,
+            'hard': 9
+        }
+        self.points_to_win: int = self.__dict_difficulty_points[self.difficulty]
+        self.__max_points_to_win: int = 15
 
     def get_random_letters(self):
-        dict_difficulty = {'easy': 10, 'medium': 9, 'hard': 8}
-        number_of_letters = dict_difficulty[self.difficulty] + getrandbits(1)
+        dict_difficulty_length = {'easy': 10, 'medium': 9, 'hard': 8}
+        number_of_letters = dict_difficulty_length[self.difficulty] + getrandbits(1)
         # each 'weight' is associated with an index in the self.LETTERS attribute
-        # TO-DO: find a more elegant way to associate a letter with a weight
+        # TODO: find a more elegant way to associate a letter with a weight
         random_letters = choices(self.LETTERS,
                                  weights=(711, 113, 318, 367, 1210, 111, 123,
                                           111, 659, 34, 28, 496, 262, 639, 501,
@@ -55,6 +70,12 @@ class DictionaryGame:
         word = sub(r'[^A-Z]', '', word)
         return word
 
+    def increment_score(self):
+        self.score += 1
+
+    def increment_points_to_win(self):
+        if self.points_to_win < self.__max_points_to_win:
+            self.points_to_win += 1
 
     def verify_response_in_dictionary(self, word: str):
         if word in self.FR_DICT:
@@ -74,53 +95,85 @@ class DictionaryGame:
 
     # this method will return False if there are not at least 5 word possibilities in the letter selection
     def are_letters_suitable(self, letters: list):
-        valid_word_count = 0
+        CORRECTION_CONST = 10
+        sum_valid_words_length = 0
         for word in self.FR_DICT:
             if self.verify_response_in_letters(letters, word):
-                valid_word_count += 1
-                if valid_word_count >= 5:
+                sum_valid_words_length += len(word)
+                if sum_valid_words_length >= (self.points_to_win + CORRECTION_CONST):
                     return True
         return False
 
+
     def turn(self):
-        CORRECTION_TIME = 0.1 #this will be added to avoid calling the timedInput function with low timeout
+        CORRECTION_TIME = 0.1  # this will be added to avoid calling the timedInput function with low timeout
         points_scored = 0
         letters = self.get_random_letters()
         BEST_SOLUTION = self.get_best_solution(letters)
         finish_time = monotonic() + self.TIME_TO_ANSWER  # self.TIME_TO_ANSWER
+        print(f'Round: {self.score}')
+        input(f'Press ENTER to start round {self.score}...\n')
         print(f'Écrit des mots avec les lettres {letters}:')
         print(f'La meilleure solution contient {len(BEST_SOLUTION)} lettres.')
-        # if __stdin__.isatty():
-        while monotonic() <= finish_time:
-            submitted_word, _ = timedInput(prompt='$ ', timeout=(finish_time-monotonic()+CORRECTION_TIME), resetOnInput=True, endCharacters="\x1b\n\r")
-            if submitted_word:
-                submitted_word = self.string_sanitize(submitted_word)
-                if self.verify_response_in_letters(letters, submitted_word):
-                    if self.verify_response_in_dictionary(submitted_word):
-                        print(f'{len(submitted_word)} points!')
-                        points_scored += len(submitted_word)
+        if __stdin__.isatty():
+            while monotonic() <= finish_time:
+                submitted_word, _ = timedInput(prompt='$ ', timeout=(finish_time - monotonic() + CORRECTION_TIME),
+                                               resetOnInput=True, endCharacters="\x1b\n\r")
+                if submitted_word:
+                    submitted_word = self.string_sanitize(submitted_word)
+                    if self.verify_response_in_letters(letters, submitted_word):
+                        if self.verify_response_in_dictionary(submitted_word):
+                            print(f'{len(submitted_word)} points!')
+                            points_scored += len(submitted_word)
+                        else:
+                            print(f'Not in the dictionnary')
                     else:
-                        print(f'Not in the dictionnary')
-                else:
-                    print(f'Invalid letters.')
-        # else:
-        #     while monotonic() <= finish_time:
-        #         submitted_word = input('$ ')
-        #         if submitted_word:
-        #             submitted_word = self.string_sanitize(submitted_word)
-        #             if self.verify_response_in_letters(letters, submitted_word):
-        #                 if self.verify_response_in_dictionary(submitted_word):
-        #                     print(f'{len(submitted_word)} points!')
-        #                     points_scored += len(submitted_word)
-        #                 else:
-        #                     print(f'Not in the dictionnary')
-        #             else:
-        #                 print(f'Invalid letters.')
+                        print(f'Invalid letters.')
+            print("* Time's up!\n")
+        else:
+            t = Timer(self.TIME_TO_ANSWER, print, ["\n* Time's up!\n"])
+            t.start()
+            while monotonic() <= finish_time:
+                submitted_word = input('$ ')
+                if submitted_word:
+                    submitted_word = self.string_sanitize(submitted_word)
+                    if self.verify_response_in_letters(letters, submitted_word):
+                        if self.verify_response_in_dictionary(submitted_word):
+                            print(f'{len(submitted_word)} points!')
+                            points_scored += len(submitted_word)
+                        else:
+                            print(f'Not in the dictionnary')
+                    else:
+                        print(f'Invalid letters.')
 
-        print(f'You scored {points_scored} points!')
-        print(f'The best solution is {BEST_SOLUTION}')
+        if points_scored >= self.points_to_win:
+            print(f'You scored {points_scored} points and beat round {self.score}!')
+            print(f'The best solution was {BEST_SOLUTION}')
+            self.increment_score()
+            self.increment_points_to_win()
+            print('\n')
+            self.turn()
+        else:
+            print(f'Game Over :(\nYou scored {points_scored}/{self.points_to_win} points!')
+            print(f'The best solution is {BEST_SOLUTION}\n')
+            self.game_over()
+
+    def game_over(self):
+        if self.score > self.high_score:
+            self.high_score = self.score
+            print(f'New high score, you went to round {self.high_score}.')
+        else:
+            print(f'You beat {self.score} round{"" if self.score <= 1 else "s"}\n')
+        input('Press ENTER to start a new game...\n')
+        self.new_game()
+
+    def new_game(self):
+        self.score = 1
+        self.points_to_win = self.__dict_difficulty_points[self.difficulty]
+        self.turn()
+
 
 
 if __name__ == '__main__':
     game = DictionaryGame('easy')
-    game.turn()
+    game.new_game()
