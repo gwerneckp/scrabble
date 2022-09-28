@@ -1,4 +1,5 @@
-from sys import __stdin__, stderr
+from sys import __stdin__, stderr, stdout, platform
+from os import environ
 from time import monotonic
 from random import getrandbits, choices
 from re import sub
@@ -7,13 +8,44 @@ if __stdin__.isatty():
     from pytimedinput import timedInput
 else:
     from threading import Timer
+
     print('This game was intended to be played in an interactive shell.', file=stderr)
+
+def supports_color():
+    # supported_platform = platform != 'Pocket PC' and (platform != 'win32' or 'ANSICON' in environ)
+    # is_a_tty = hasattr(stdout, 'isatty') and stdout.isatty()
+    # return supported_platform and is_a_tty
+
+    # TODO: detect if terminal supports ANSI escape codes
+
+    return True
+class bcolors:
+    if supports_color():
+        HEADER = '\033[95m'
+        OKBLUE = '\033[94m'
+        OKCYAN = '\033[96m'
+        OKGREEN = '\033[92m'
+        WARNING = '\033[93m'
+        FAIL = '\033[91m'
+        ENDC = '\033[0m'
+        BOLD = '\033[1m'
+        UNDERLINE = '\033[4m'
+    else:
+        HEADER = ''
+        OKBLUE = ''
+        OKCYAN = ''
+        OKGREEN = ''
+        WARNING = ''
+        FAIL = ''
+        ENDC = ''
+        BOLD = ''
+        UNDERLINE = ''
 
 
 class DictionaryGame:
 
     def __init__(self, difficulty: str):
-        self.FR_DICT: set = set(line.strip() for line in open('dict.txt'))
+        self.FR_DICT: set = set(line.strip() for line in open('en_dict.txt'))
         self.LETTERS: str = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
         self.TIME_TO_ANSWER: int = 15  # DEBUG PURPOSES
         self.difficulty: str = difficulty
@@ -104,17 +136,16 @@ class DictionaryGame:
                     return True
         return False
 
-
     def turn(self):
         CORRECTION_TIME = 0.1  # this will be added to avoid calling the timedInput function with low timeout
         points_scored = 0
         letters = self.get_random_letters()
         BEST_SOLUTION = self.get_best_solution(letters)
         finish_time = monotonic() + self.TIME_TO_ANSWER  # self.TIME_TO_ANSWER
-        print(f'Round: {self.score}')
-        input(f'Press ENTER to start round {self.score}...\n')
-        print(f'Écrit des mots avec les lettres {letters}:')
-        print(f'La meilleure solution contient {len(BEST_SOLUTION)} lettres.')
+        print(f'Round: {bcolors.BOLD}{self.score}{bcolors.ENDC}')
+        input(f'Press {bcolors.BOLD}ENTER{bcolors.ENDC} to start round {bcolors.BOLD}{self.score}{bcolors.ENDC}...\n')
+        print(f'Submit words with the letters: {bcolors.OKBLUE}{", ".join(letters)}{bcolors.ENDC}:')
+        print(f'The best solution has {bcolors.OKBLUE}{len(BEST_SOLUTION)}{bcolors.ENDC} letters.')
         if __stdin__.isatty():
             while monotonic() <= finish_time:
                 submitted_word, _ = timedInput(prompt='$ ', timeout=(finish_time - monotonic() + CORRECTION_TIME),
@@ -129,9 +160,9 @@ class DictionaryGame:
                             print(f'Not in the dictionnary')
                     else:
                         print(f'Invalid letters.')
-            print("* Time's up!\n")
+            print(f"{bcolors.WARNING}* Time's up!{bcolors.ENDC}\n")
         else:
-            t = Timer(self.TIME_TO_ANSWER, print, ["\n* Time's up!\n"])
+            t = Timer(self.TIME_TO_ANSWER, print, [f"\n{bcolors.WARNING}* Time's up!{bcolors.ENDC}\n"])
             t.start()
             while monotonic() <= finish_time:
                 submitted_word = input('$ ')
@@ -139,12 +170,12 @@ class DictionaryGame:
                     submitted_word = self.string_sanitize(submitted_word)
                     if self.verify_response_in_letters(letters, submitted_word):
                         if self.verify_response_in_dictionary(submitted_word):
-                            print(f'{len(submitted_word)} points!')
+                            print(f'{bcolors.OKGREEN}{len(submitted_word)} points!{bcolors.ENDC}')
                             points_scored += len(submitted_word)
                         else:
-                            print(f'Not in the dictionnary')
+                            print(f'{bcolors.FAIL}Not in the dictionnary{bcolors.ENDC}')
                     else:
-                        print(f'Invalid letters.')
+                        print(f'{bcolors.FAIL}Invalid letters.{bcolors.ENDC}')
 
         if points_scored >= self.points_to_win:
             print(f'You scored {points_scored} points and beat round {self.score}!')
@@ -154,8 +185,8 @@ class DictionaryGame:
             print('\n')
             self.turn()
         else:
-            print(f'Game Over :(\nYou scored {points_scored}/{self.points_to_win} points!')
-            print(f'The best solution is {BEST_SOLUTION}\n')
+            print(f'{bcolors.WARNING}Game Over :({bcolors.ENDC}\nYou scored {bcolors.BOLD}{points_scored}/{self.points_to_win} points{bcolors.ENDC}!')
+            print(f'The best solution is {bcolors.OKBLUE}{BEST_SOLUTION}{bcolors.ENDC}\n')
             self.game_over()
 
     def game_over(self):
@@ -164,14 +195,13 @@ class DictionaryGame:
             print(f'New high score, you went to round {self.high_score}.')
         else:
             print(f'You beat {self.score} round{"" if self.score <= 1 else "s"}\n')
-        input('Press ENTER to start a new game...\n')
+        input(f'Press {bcolors.BOLD}ENTER{bcolors.ENDC} to start a new game...\n')
         self.new_game()
 
     def new_game(self):
         self.score = 1
         self.points_to_win = self.__dict_difficulty_points[self.difficulty]
         self.turn()
-
 
 
 if __name__ == '__main__':
